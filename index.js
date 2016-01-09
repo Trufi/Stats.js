@@ -1,8 +1,13 @@
-function Stats() {
-    this.element = document.createElement('div');
-    this.element.style.position = 'absolute';
-    this.element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-    this.element.style.width = '150px';
+function Stats(options) {
+    options = options || {};
+
+    if (options.dom) {
+        this._dom = true;
+        this.element = document.createElement('div');
+        this.element.style.position = 'absolute';
+        this.element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+        this.element.style.width = '150px';
+    }
 
     if (performance && performance.now) {
         this._time = performance.now.bind(performance);
@@ -70,6 +75,8 @@ Stats.prototype.end = function() {
 };
 
 Stats.prototype.update = function() {
+    if (!this._dom) { return; }
+
     this.element.innerHTML = 'FPS: ' + this.fps +
         '<br>Average FPS: ' + this._round(this.averageFps) +
         '<br>MS: ' + this._round(this.ms) +
