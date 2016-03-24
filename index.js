@@ -2,14 +2,6 @@
     function Stats(options) {
         options = options || {};
 
-        if (options.dom) {
-            this._dom = true;
-            this.element = document.createElement('div');
-            this.element.style.position = 'absolute';
-            this.element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-            this.element.style.width = '150px';
-        }
-
         if (performance && performance.now) {
             this._time = performance.now.bind(performance);
         } else if (!window && typeof process !== 'undefined') {
@@ -25,54 +17,44 @@
         this.update();
     }
 
-    Stats.prototype.reset = function() {
-        this._startTime = this._prevTime = this._createTime = this._time();
-        this.elapsedTime = 0;
-
-        this.ms = 0;
-        this.meanMs = null;
-        this._msTickNumbers = 1;
-
-        this._frames = 0;
-        this.fps = 0;
-        this.meanFps = null;
-        this._fpsTickNumbers = 1;
-
-        this._counters = {};
-    };
-
-    Stats.prototype.start = function() {
-        this._startTime = this._time();
-    };
-
-    Stats.prototype.end = function() {
-        var time = this._time();
-
-        this.elapsedTime = time - this._createTime;
-
-        this.ms = time - this._startTime;
-        this._msTickNumbers++;
-
-        if (this.meanMs === null) {
-            this.meanMs = this.ms;
-        } else {
-            this.meanMs += (this.ms - this.meanMs) / this._msTickNumbers;
+    Stats.prototype.getHtmlElement = function() {
+        if (!this._dom) {
+            this._dom = true;
+            this._element = document.createElement('div');
+            this._element.style.position = 'absolute';
+            this._element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            this._element.style.width = '150px';
         }
+
+        return this._element;
+    };
+
+    Stats.prototype.reset = function() {
+        this._counters = {};
+        this._frameStartTime = this._previousFrameTime = this._createTime = this._time();
+        this.elapsedTime = 0;
+        this._frames = 0;
+    };
+
+    Stats.prototype.frameStart = function() {
+        this._frameStartTime = this._time();
+    };
+
+    Stats.prototype.frameEnd = function() {
+        var now = this._time();
+
+        this.elapsedTime = now - this._createTime;
+
+        this.addToCounter('ms', now - this._frameStartTime);
 
         this._frames++;
 
-        if (time > this._prevTime + 1000) {
-            this.fps = Math.round((this._frames * 1000) / (time - this._prevTime));
-            this._fpsTickNumbers++;
-
-            if (this.meanFps === null) {
-                this.meanFps = this.fps;
-            } else {
-                this.meanFps += (this.fps - this.meanFps) / this._fpsTickNumbers;
-            }
+        if (now > this._previousFrameTime + 1000) {
+            var fps = Math.round((this._frames * 1000) / (now - this._previousFrameTime));
+            this.addToCounter('fps', fps);
 
             this._frames = 0;
-            this._prevTime = time;
+            this._previousFrameTime = now;
 
             this.update();
         }
@@ -83,17 +65,13 @@
 
         var text = this.getText();
 
-        this.element.innerHTML = text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
+        this._element.innerHTML = text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
     };
 
     Stats.prototype.getText = function() {
         var stats = this.get();
 
-        var text = 'FPS: ' + stats.fps +
-            '\nMean FPS: ' + stats.meanFps +
-            '\nMS: ' + stats.ms +
-            '\nMean MS: ' + stats.meanMs +
-            '\nElapsed time: ' + stats.elapsedTime + 's';
+        var text = 'Elapsed time: ' + stats.elapsedTime + 's';
 
         if (stats.counters) {
             text += '\nCounters:';
@@ -109,12 +87,10 @@
     };
 
     Stats.prototype.get = function() {
+        console.time('test');
         var result = {
-            fps: this.fps,
-            meanFps: this._round(this.meanFps),
-            ms: this._round(this.ms),
-            meanMs: this._round(this.meanMs),
-            elapsedTime: Math.round(this.elapsedTime / 1000)
+            elapsedTime: Math.round(this.elapsedTime / 1000),
+            counter: {}
         };
 
         if (Object.keys(this._counters).length) {
@@ -127,6 +103,7 @@
                 };
             }
         }
+        console.timeEnd('test');
 
         return result;
     };
@@ -169,6 +146,10 @@
 
     Counter.prototype.getMean = function() {
         return this.mean;
+    };
+
+    Counter.prototype.last = function() {
+        return this.sample[this.sample.length - 1];
     };
 
     Counter.prototype.getDeviation = function() {
