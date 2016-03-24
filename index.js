@@ -10,29 +10,31 @@
             this._time = Date.now.bind(Date);
         }
 
-        this._roundTo = options.roundTo !== undefined ? options.roundTo : 2;
-        this._roundFactor = Math.pow(10, this._roundTo);
-
         this.reset();
         this.update();
     }
 
-    Stats.prototype.getHtmlElement = function() {
-        if (!this._dom) {
-            this._dom = true;
-            this._element = document.createElement('div');
-            this._element.style.position = 'absolute';
-            this._element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-            this._element.style.width = '150px';
+    Stats.ROUND_FACTOR = 1e3;
+
+    Stats.round = function(value) {
+        return Math.round(value * Stats.ROUND_FACTOR) / Stats.ROUND_FACTOR;
+    };
+
+    Stats.prototype.add = function(name, x) {
+        this._getCounter(name).add(x);
+    };
+
+    Stats.prototype.get = function(name) {
+        if (name === undefined) {
+            return this._getAll();
         }
 
-        return this._element;
+        return this._getCounter(name);
     };
 
     Stats.prototype.reset = function() {
         this._counters = {};
         this._frameStartTime = this._previousFrameTime = this._createTime = this._time();
-        this.elapsedTime = 0;
         this._frames = 0;
     };
 
@@ -43,15 +45,13 @@
     Stats.prototype.frameEnd = function() {
         var now = this._time();
 
-        this.elapsedTime = now - this._createTime;
-
-        this.addToCounter('ms', now - this._frameStartTime);
+        this.add('ms', now - this._frameStartTime);
 
         this._frames++;
 
         if (now > this._previousFrameTime + 1000) {
             var fps = Math.round((this._frames * 1000) / (now - this._previousFrameTime));
-            this.addToCounter('fps', fps);
+            this.add('fps', fps);
 
             this._frames = 0;
             this._previousFrameTime = now;
@@ -68,16 +68,29 @@
         this._element.innerHTML = text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
     };
 
-    Stats.prototype.getText = function() {
-        var stats = this.get();
+    Stats.prototype.getHtmlElement = function() {
+        if (!this._dom) {
+            this._dom = true;
+            this._element = document.createElement('div');
+            this._element.style.position = 'absolute';
+            this._element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
+            this._element.style.width = '150px';
+        }
 
-        var text = 'Elapsed time: ' + stats.elapsedTime + 's';
+        return this._element;
+    };
+
+    Stats.prototype.getText = function() {
+        var stats = this._getAll();
+
+        var text = 'Elapsed time: ' + Math.round(stats.elapsedTime / 1000) + 's';
 
         if (stats.counters) {
             text += '\nCounters:';
 
             for (var name in stats.counters) {
                 text += '\n\t' + name + ': ' +
+                    '\n\t\tlast: ' + stats.counters[name].last +
                     '\n\t\tmean: ' + stats.counters[name].mean +
                     '\n\t\tdeviation: ' + stats.counters[name].deviation;
             }
@@ -86,26 +99,36 @@
         return text;
     };
 
-    Stats.prototype.get = function() {
-        console.time('test');
-        var result = {
-            elapsedTime: Math.round(this.elapsedTime / 1000),
+    Stats.prototype.getElapsedTime = function() {
+        return this._time() - this._createTime;
+    };
+
+    Stats.prototype._getAll = function() {
+        var stats = {
+            elapsedTime: this.getElapsedTime(),
             counter: {}
         };
 
         if (Object.keys(this._counters).length) {
-            result.counters = {};
+            stats.counters = {};
 
             for (var name in this._counters) {
-                result.counters[name] = {
-                    mean: this._round(this._counters[name].getMean()),
-                    deviation: this._round(this._counters[name].getDeviation())
-                };
+                stats.counters[name] = this._counters[name].get();
             }
         }
-        console.timeEnd('test');
 
-        return result;
+        return stats;
+    };
+
+    Stats.prototype._getCounter = function(name) {
+        if (!this._counters[name]) {
+            this._createCounter(name);
+        }
+        return this._counters[name];
+    };
+
+    Stats.prototype._createCounter = function(name) {
+        this._counters[name] = new Counter(name);
     };
 
     Stats.prototype._serverTime = function() {
@@ -114,20 +137,6 @@
         return (hrtime[0] + hrtime[1] / 1e9) * 1000;
     };
 
-    Stats.prototype._round = function(value) {
-        return Math.round(value * this._roundFactor) / this._roundFactor;
-    };
-
-    Stats.prototype.addToCounter = function(name, x) {
-        if (!this._counters[name]) {
-            this._counters[name] = new Counter(name);
-        }
-        this._counters[name].add(x);
-    };
-
-    Stats.prototype.resetCounter = function(name) {
-        this._counters[name].reset();
-    };
 
     function Counter(name) {
         this.name = name;
@@ -144,12 +153,22 @@
         }
     };
 
-    Counter.prototype.getMean = function() {
-        return this.mean;
+    Counter.prototype.get = function() {
+        return {
+            last: this.getLast(),
+            mean: this.getMean(),
+            deviation: this.getDeviation()
+        };
     };
 
-    Counter.prototype.last = function() {
-        return this.sample[this.sample.length - 1];
+    Counter.prototype.getMean = function() {
+        return Stats.round(this.mean);
+    };
+
+    Counter.prototype.getLast = function(index) {
+        index = index || 0;
+
+        return Stats.round(this.sample[this.sample.length - 1 - index]);
     };
 
     Counter.prototype.getDeviation = function() {
@@ -163,7 +182,7 @@
 
         dispersion = dispersion / sample.length;
 
-        return Math.sqrt(dispersion);
+        return Stats.round(Math.sqrt(dispersion));
     };
 
     Counter.prototype.reset = function() {
