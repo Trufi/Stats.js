@@ -3,11 +3,11 @@
         options = options || {};
 
         if (performance && performance.now) {
-            this._time = performance.now.bind(performance);
+            this.time = performance.now.bind(performance);
         } else if (!window && typeof process !== 'undefined') {
-            this._time = this._serverTime;
+            this.time = this._serverTime;
         } else {
-            this._time = Date.now.bind(Date);
+            this.time = Date.now.bind(Date);
         }
 
         this.reset();
@@ -34,16 +34,16 @@
 
     Stats.prototype.reset = function() {
         this._counters = {};
-        this._frameStartTime = this._previousFrameTime = this._createTime = this._time();
+        this._frameStartTime = this._previousFrameTime = this._createTime = this.time();
         this._frames = 0;
     };
 
     Stats.prototype.frameStart = function() {
-        this._frameStartTime = this._time();
+        this._frameStartTime = this.time();
     };
 
     Stats.prototype.frameEnd = function() {
-        var now = this._time();
+        var now = this.time();
 
         this.add('ms', now - this._frameStartTime);
 
@@ -74,7 +74,7 @@
             this._element = document.createElement('div');
             this._element.style.position = 'absolute';
             this._element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-            this._element.style.width = '150px';
+            this._element.style.minWidth = '150px';
         }
 
         return this._element;
@@ -90,6 +90,7 @@
 
             for (var name in stats.counters) {
                 text += '\n\t' + name + ': ' +
+                    '\n\t\tlength: ' + stats.counters[name].length +
                     '\n\t\tlast: ' + stats.counters[name].last +
                     '\n\t\tmean: ' + stats.counters[name].mean +
                     '\n\t\tdeviation: ' + stats.counters[name].deviation;
@@ -100,7 +101,7 @@
     };
 
     Stats.prototype.getElapsedTime = function() {
-        return this._time() - this._createTime;
+        return this.time() - this._createTime;
     };
 
     Stats.prototype._getAll = function() {
@@ -157,8 +158,13 @@
         return {
             last: this.getLast(),
             mean: this.getMean(),
-            deviation: this.getDeviation()
+            deviation: this.getDeviation(),
+            length: this.getLength()
         };
+    };
+
+    Counter.prototype.getLength = function() {
+        return this.sample.length;
     };
 
     Counter.prototype.getMean = function() {
