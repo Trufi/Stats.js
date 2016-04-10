@@ -63,21 +63,20 @@
     Stats.prototype.update = function() {
         if (!this._dom) { return; }
 
-        var text = this.getText();
-
-        this._element.innerHTML = text.replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
+        this._element.innerHTML = this.getHtmlText();
     };
 
     Stats.prototype.getHtmlElement = function() {
         if (!this._dom) {
             this._dom = true;
             this._element = document.createElement('div');
-            this._element.style.position = 'absolute';
-            this._element.style.backgroundColor = 'rgba(255, 255, 255, 0.8)';
-            this._element.style.minWidth = '150px';
         }
 
         return this._element;
+    };
+
+    Stats.prototype.getHtmlText = function() {
+        return this.getText().replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
     };
 
     Stats.prototype.getText = function() {
