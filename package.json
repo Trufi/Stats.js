@@ -1,8 +1,15 @@
 {
   "name": "stats.js",
-  "version": "2.0.1",
+  "version": "2.0.2",
   "description": "",
   "main": "index.js",
-  "author": "Mstislav Zhivodkov",
+  "author": {
+    "name": "Mstislav Zhivodkov",
+    "email": "stevemyz@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/Trufi/Stats.js.git"
+  },
   "license": "MIT"
 }

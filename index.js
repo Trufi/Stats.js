@@ -93,6 +93,8 @@
                     '\n\t\tlength: ' + stats.counters[name].length +
                     '\n\t\tlast: ' + stats.counters[name].last +
                     '\n\t\tmean: ' + stats.counters[name].mean +
+                    '\n\t\tmin: ' + stats.counters[name].min +
+                    '\n\t\tmax: ' + stats.counters[name].max +
                     '\n\t\tdeviation: ' + stats.counters[name].deviation;
             }
         }
@@ -142,15 +144,26 @@
     function Counter(name) {
         this.name = name;
         this.sample = [];
+        this.mean = null;
+        this.max = null;
+        this.min = null;
     }
 
     Counter.prototype.add = function(x) {
         this.sample.push(x);
 
-        if (this.mean === undefined) {
+        if (this.mean === null) {
             this.mean = x;
         } else {
             this.mean = this.mean + (x - this.mean) / this.sample.length;
+        }
+
+        if (this.min === null || this.min > x) {
+            this.min = x;
+        }
+
+        if (this.max === null || this.max < x) {
+            this.max = x;
         }
     };
 
@@ -158,6 +171,8 @@
         return {
             last: this.getLast(),
             mean: this.getMean(),
+            min: this.getMin(),
+            max: this.getMax(),
             deviation: this.getDeviation(),
             length: this.getLength()
         };
@@ -169,6 +184,14 @@
 
     Counter.prototype.getMean = function() {
         return Stats.round(this.mean);
+    };
+
+    Counter.prototype.getMin = function() {
+        return Stats.round(this.min);
+    };
+
+    Counter.prototype.getMax = function() {
+        return Stats.round(this.max);
     };
 
     Counter.prototype.getLast = function(index) {
@@ -192,8 +215,10 @@
     };
 
     Counter.prototype.reset = function() {
-        this.mean = undefined;
+        this.mean = null;
         this.sample = [];
+        this.min = null;
+        this.max = null;
     };
 
     if (typeof module !== 'undefined' && module.exports) {
