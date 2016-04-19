@@ -2,9 +2,9 @@
     function Stats(options) {
         options = options || {};
 
-        if (performance && performance.now) {
+        if (typeof performance !== 'undefined' && performance.now) {
             this.time = performance.now.bind(performance);
-        } else if (!window && typeof process !== 'undefined') {
+        } else if (typeof process !== 'undefined') {
             this.time = this._serverTime;
         } else {
             this.time = Date.now.bind(Date);
@@ -142,20 +142,20 @@
 
     function Counter(name) {
         this.name = name;
+
         this.sample = [];
-        this.mean = null;
+        this.sampleLimit = Infinity;
+        this._sampleIndex = 0;
+        this._sampleLength = 0;
+
         this.max = null;
         this.min = null;
     }
 
     Counter.prototype.add = function(x) {
-        this.sample.push(x);
-
-        if (this.mean === null) {
-            this.mean = x;
-        } else {
-            this.mean = this.mean + (x - this.mean) / this.sample.length;
-        }
+        this.sample[this._sampleIndex] = x;
+        this._sampleLength++;
+        this._sampleIndex = this._sampleLength % this.sampleLimit;
 
         if (this.min === null || this.min > x) {
             this.min = x;
@@ -167,22 +167,33 @@
     };
 
     Counter.prototype.get = function() {
+        var mean = getMean();
+
         return {
             last: this.getLast(),
-            mean: this.getMean(),
+            mean: mean,
             min: this.getMin(),
             max: this.getMax(),
-            deviation: this.getDeviation(),
+            deviation: this.getDeviation(mean),
             length: this.getLength()
         };
     };
 
     Counter.prototype.getLength = function() {
-        return this.sample.length;
+        return this._sampleLength;
     };
 
     Counter.prototype.getMean = function() {
-        return Stats.round(this.mean);
+        var sample = this.sample;
+        var mean = sample[0];
+
+        for (var i = 1; i < sample.length; i++) {
+            mean += sample[i];
+        }
+
+        mean /= sample.length;
+
+        return Stats.round(mean);
     };
 
     Counter.prototype.getMin = function() {
@@ -195,13 +206,15 @@
 
     Counter.prototype.getLast = function(index) {
         index = index || 0;
+        index = (this._sampleLength - 1 - index) % this.sampleLimit;
 
-        return Stats.round(this.sample[this.sample.length - 1 - index]);
+        return Stats.round(this.sample[index]);
     };
 
-    Counter.prototype.getDeviation = function() {
+    Counter.prototype.getDeviation = function(mean) {
+        mean = mean !== undefined ? mean : this.getMean();
+
         var sample = this.sample;
-        var mean = this.mean;
         var dispersion = 0;
 
         for (var i = 0; i < sample.length; i++) {
@@ -214,8 +227,9 @@
     };
 
     Counter.prototype.reset = function() {
-        this.mean = null;
         this.sample = [];
+        this._sampleIndex = 0;
+        this._sampleLength = 0;
         this.min = null;
         this.max = null;
     };
@@ -224,7 +238,7 @@
         module.exports = Stats;
     }
 
-    if (window) {
+    if (typeof window !== 'undefined') {
         window.Stats = Stats;
     }
 })();

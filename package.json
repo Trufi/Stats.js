@@ -11,5 +11,11 @@
     "type": "git",
     "url": "git://github.com/Trufi/Stats.js.git"
   },
-  "license": "MIT"
+  "license": "MIT",
+  "devDependencies": {
+    "ava": "^0.14.0"
+  },
+  "scripts": {
+    "test": "ava"
+  }
 }
