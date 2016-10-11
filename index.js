@@ -167,7 +167,7 @@
     };
 
     Counter.prototype.get = function() {
-        var mean = getMean();
+        var mean = this.getMean();
 
         return {
             last: this.getLast(),
