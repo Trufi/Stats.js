@@ -9,7 +9,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git://github.com/Trufi/Stats.js.git"
+    "url": "git://github.com/Trufi/statistical-sampling.git"
   },
   "license": "MIT",
   "devDependencies": {

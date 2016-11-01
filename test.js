@@ -1,9 +1,9 @@
 var test = require('ava');
 
-var Stats = require('./index.js');
+var Sampling = require('./index.js');
 
 test('Several #add calls', t => {
-    var stats = new Stats();
+    var stats = new Sampling();
 
     stats.add('a', 1);
 
@@ -36,11 +36,11 @@ test('Several #add calls', t => {
 });
 
 test('Limit counter sample length', t => {
-    var stats = new Stats();
+    var stats = new Sampling();
 
     var counterA = stats.get('a');
 
-    counterA.sampleLimit = 4;
+    counterA.limit = 4;
 
     stats.add('a', 1);
     stats.add('a', 1);
@@ -65,7 +65,7 @@ test('Limit counter sample length', t => {
 });
 
 test('Math.random', t => {
-    var stats = new Stats();
+    var stats = new Sampling();
 
     for (var i = 0; i < 1000; i++) {
         stats.add('a', Math.random());

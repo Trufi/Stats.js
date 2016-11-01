@@ -1,5 +1,5 @@
 (function() {
-    function Stats(options) {
+    function Sampling(options) {
         options = options || {};
 
         if (typeof performance !== 'undefined' && performance.now) {
@@ -14,17 +14,17 @@
         this.update();
     }
 
-    Stats.ROUND_FACTOR = 1e3;
+    Sampling.ROUND_FACTOR = 1e3;
 
-    Stats.round = function(value) {
-        return Math.round(value * Stats.ROUND_FACTOR) / Stats.ROUND_FACTOR;
+    Sampling.round = function(value) {
+        return Math.round(value * Sampling.ROUND_FACTOR) / Sampling.ROUND_FACTOR;
     };
 
-    Stats.prototype.add = function(name, x) {
+    Sampling.prototype.add = function(name, x) {
         this._getCounter(name).add(x);
     };
 
-    Stats.prototype.get = function(name) {
+    Sampling.prototype.get = function(name) {
         if (name === undefined) {
             return this._getAll();
         }
@@ -32,17 +32,17 @@
         return this._getCounter(name);
     };
 
-    Stats.prototype.reset = function() {
+    Sampling.prototype.reset = function() {
         this._counters = {};
         this._frameStartTime = this._previousFrameTime = this._createTime = this.time();
         this._frames = 0;
     };
 
-    Stats.prototype.frameStart = function() {
+    Sampling.prototype.frameStart = function() {
         this._frameStartTime = this.time();
     };
 
-    Stats.prototype.frameEnd = function() {
+    Sampling.prototype.frameEnd = function() {
         var now = this.time();
 
         this.add('ms', now - this._frameStartTime);
@@ -60,13 +60,13 @@
         }
     };
 
-    Stats.prototype.update = function() {
+    Sampling.prototype.update = function() {
         if (!this._dom) { return; }
 
         this._element.innerHTML = this.getHtmlText();
     };
 
-    Stats.prototype.getHtmlElement = function() {
+    Sampling.prototype.getHtmlElement = function() {
         if (!this._dom) {
             this._dom = true;
             this._element = document.createElement('div');
@@ -75,11 +75,11 @@
         return this._element;
     };
 
-    Stats.prototype.getHtmlText = function() {
+    Sampling.prototype.getHtmlText = function() {
         return this.getText().replace(/\n/g, '<br>').replace(/\t/g, '&nbsp;&nbsp;');
     };
 
-    Stats.prototype.getText = function() {
+    Sampling.prototype.getText = function() {
         var stats = this._getAll();
 
         var text = 'Elapsed time: ' + Math.round(stats.elapsedTime / 1000) + 's';
@@ -101,11 +101,11 @@
         return text;
     };
 
-    Stats.prototype.getElapsedTime = function() {
+    Sampling.prototype.getElapsedTime = function() {
         return this.time() - this._createTime;
     };
 
-    Stats.prototype._getAll = function() {
+    Sampling.prototype._getAll = function() {
         var stats = {
             elapsedTime: this.getElapsedTime(),
             counter: {}
@@ -122,18 +122,18 @@
         return stats;
     };
 
-    Stats.prototype._getCounter = function(name) {
+    Sampling.prototype._getCounter = function(name) {
         if (!this._counters[name]) {
             this._createCounter(name);
         }
         return this._counters[name];
     };
 
-    Stats.prototype._createCounter = function(name) {
+    Sampling.prototype._createCounter = function(name) {
         this._counters[name] = new Counter(name);
     };
 
-    Stats.prototype._serverTime = function() {
+    Sampling.prototype._serverTime = function() {
         var hrtime = process.hrtime();
 
         return (hrtime[0] + hrtime[1] / 1e9) * 1000;
@@ -144,7 +144,7 @@
         this.name = name;
 
         this.sample = [];
-        this.sampleLimit = Infinity;
+        this.limit = Infinity;
         this._sampleIndex = 0;
         this._sampleLength = 0;
 
@@ -155,7 +155,7 @@
     Counter.prototype.add = function(x) {
         this.sample[this._sampleIndex] = x;
         this._sampleLength++;
-        this._sampleIndex = this._sampleLength % this.sampleLimit;
+        this._sampleIndex = this._sampleLength % this.limit;
 
         if (this.min === null || this.min > x) {
             this.min = x;
@@ -193,22 +193,22 @@
 
         mean /= sample.length;
 
-        return Stats.round(mean);
+        return Sampling.round(mean);
     };
 
     Counter.prototype.getMin = function() {
-        return Stats.round(this.min);
+        return Sampling.round(this.min);
     };
 
     Counter.prototype.getMax = function() {
-        return Stats.round(this.max);
+        return Sampling.round(this.max);
     };
 
     Counter.prototype.getLast = function(index) {
         index = index || 0;
-        index = (this._sampleLength - 1 - index) % this.sampleLimit;
+        index = (this._sampleLength - 1 - index) % this.limit;
 
-        return Stats.round(this.sample[index]);
+        return Sampling.round(this.sample[index]);
     };
 
     Counter.prototype.getDeviation = function(mean) {
@@ -223,7 +223,7 @@
 
         dispersion = dispersion / sample.length;
 
-        return Stats.round(Math.sqrt(dispersion));
+        return Sampling.round(Math.sqrt(dispersion));
     };
 
     Counter.prototype.reset = function() {
@@ -235,10 +235,10 @@
     };
 
     if (typeof module !== 'undefined' && module.exports) {
-        module.exports = Stats;
+        module.exports = Sampling;
     }
 
     if (typeof window !== 'undefined') {
-        window.Stats = Stats;
+        window.Sampling = Sampling;
     }
 })();
