@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Demo Sampling</title>
+    <script src="./index.js"></script>
+    <script src="./Plot.js"></script>
+</head>
+<body>
+    <canvas id="canvas" width="300" height="300"></canvas>
+    <script>
+        var sampling = new Sampling();
+        var counter = sampling.get('click');
+
+        var canvas = document.getElementById('canvas');
+        var plot = new Plot(canvas, {
+            highlightThreshold: 20,
+            limit: 100
+        });
+
+        var lastTime;
+
+        function update() {
+            requestAnimationFrame(update);
+
+            var time = performance.now();
+
+            if (lastTime) {
+                counter.add(time - lastTime);
+            }
+
+            lastTime = time;
+            plot.draw(counter);
+        }
+
+        requestAnimationFrame(update);
+
+        document.body.addEventListener('click', function() {
+
+        });
+    </script>
+</body>
+</html>

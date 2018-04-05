@@ -82,7 +82,7 @@
     Sampling.prototype.getText = function() {
         var stats = this._getAll();
 
-        var text = 'Elapsed time: ' + Math.round(stats.elapsedTime / 1000) + 's';
+        var text = 'Elapsed time: ' + Sampling.round(stats.elapsedTime) + 's';
 
         if (stats.counters) {
             text += '\nCounters:';
@@ -91,10 +91,12 @@
                 text += '\n\t' + name + ': ' +
                     '\n\t\tlength: ' + stats.counters[name].length +
                     '\n\t\tlast: ' + stats.counters[name].last +
+                    '\n\t\tmedian: ' + stats.counters[name].median +
                     '\n\t\tmean: ' + stats.counters[name].mean +
                     '\n\t\tmin: ' + stats.counters[name].min +
                     '\n\t\tmax: ' + stats.counters[name].max +
-                    '\n\t\tdeviation: ' + stats.counters[name].deviation;
+                    '\n\t\tdeviation: ' + stats.counters[name].deviation +
+                    '\n\t\tupperThresholdCount: ' + stats.counters[name].upperThresholdCount;
             }
         }
 
@@ -150,6 +152,9 @@
 
         this.max = null;
         this.min = null;
+
+        this.upperThreshold = Infinity;
+        this.upperThresholdValues = [];
     }
 
     Counter.prototype.add = function(x) {
@@ -164,6 +169,10 @@
         if (this.max === null || this.max < x) {
             this.max = x;
         }
+
+        if (x > this.upperThreshold) {
+            this.upperThresholdValues.push(x);
+        }
     };
 
     Counter.prototype.get = function() {
@@ -175,7 +184,9 @@
             min: this.getMin(),
             max: this.getMax(),
             deviation: this.getDeviation(mean),
-            length: this.getLength()
+            length: this.getLength(),
+            median: this.getMedian(),
+            upperThresholdCount: this.upperThresholdValues.length,
         };
     };
 
@@ -194,6 +205,11 @@
         mean /= sample.length;
 
         return Sampling.round(mean);
+    };
+
+    Counter.prototype.getMedian = function() {
+        const sample = this.sample.slice().sort();
+        return Sampling.round(sample[Math.floor(sample.length / 2)]);
     };
 
     Counter.prototype.getMin = function() {
